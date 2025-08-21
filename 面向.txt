@@ -1,0 +1,46 @@
+-- 上半身朝向最近玩家的脚本（基础示例）
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local upperTorso = character:WaitForChild("UpperTorso") -- 上半身骨骼，需根据实际模型调整名称
+
+-- 获取除自己外的最近玩家
+local function getNearestPlayer()
+    local nearestPlayer = nil
+    local nearestDistance = math.huge
+    local rootPart = character:WaitForChild("HumanoidRootPart")
+    
+    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+        if otherPlayer ~= player and otherPlayer.Character then
+            local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if otherRoot then
+                local distance = (rootPart.Position - otherRoot.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestPlayer = otherPlayer
+                end
+            end
+        end
+    end
+    return nearestPlayer
+end
+
+-- 每帧更新上半身朝向
+RunService.RenderStepped:Connect(function()
+    local nearest = getNearestPlayer()
+    if nearest and nearest.Character then
+        local targetRoot = nearest.Character:FindFirstChild("HumanoidRootPart")
+        if targetRoot then
+            -- 计算朝向目标的方向（忽略Y轴，避免上下倾斜）
+            local lookAtPos = targetRoot.Position
+            lookAtPos = Vector3.new(lookAtPos.X, upperTorso.Position.Y, lookAtPos.Z)
+            local lookVector = (lookAtPos - upperTorso.Position).Unit
+            
+            -- 计算旋转角度并应用到上半身
+            local targetCFrame = CFrame.lookAt(upperTorso.Position, lookAtPos)
+            upperTorso.CFrame = targetCFrame
+        end
+    end
+end)

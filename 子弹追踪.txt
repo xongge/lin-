@@ -1,0 +1,73 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- 本地玩家及团队信息
+local localPlayer = Players.LocalPlayer
+local function isTeammate(otherPlayer)
+    -- 无团队时默认不是队友
+    if not localPlayer.Team or not otherPlayer.Team then
+        return false
+    end
+    return localPlayer.Team == otherPlayer.Team
+end
+
+-- 获取最近的非队友玩家
+local function getNearestEnemy(origin)
+    local nearestDistance = math.huge
+    local nearestPlayer = nil
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        -- 排除自己和队友
+        if player ~= localPlayer and not isTeammate(player) then
+            local character = player.Character
+            local humanoidRootPart = character and character:FindFirstChild("HumanoidRootPart")
+            -- 确保目标存活且有碰撞体
+            if humanoidRootPart and character:FindFirstChildOfClass("Humanoid")?.Health > 0 then
+                local distance = (origin - humanoidRootPart.Position).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestPlayer = humanoidRootPart
+                end
+            end
+        end
+    end
+    return nearestPlayer
+end
+
+-- 监听子弹创建事件（适配多数武器系统）
+local function onBulletCreated(bullet)
+    -- 确保子弹是物理实体
+    if bullet:IsA("BasePart") and bullet:FindFirstChildOfClass("BodyVelocity") then
+        -- 获取发射原点（通常是武器枪口位置）
+        local origin = bullet.Position
+        -- 查找最近敌人
+        local target = getNearestEnemy(origin)
+        
+        if target then
+            -- 计算朝向目标的方向
+            local direction = (target.Position - origin).Unit
+            -- 设置子弹初速度方向（第一帧立即转向）
+            local bodyVelocity = bullet:FindFirstChildOfClass("BodyVelocity")
+            if bodyVelocity then
+                bodyVelocity.Velocity = direction * bodyVelocity.Velocity.Magnitude
+            end
+            -- 同步子弹朝向
+            bullet.CFrame = CFrame.lookAt(origin, target.Position)
+        end
+    end
+end
+
+-- 监听所有新创建的子弹（通过 workspace 子项添加事件）
+workspace.ChildAdded:Connect(function(child)
+    -- 假设子弹名称包含 "Bullet" 关键字，可根据实际情况修改
+    if child.Name:find("Bullet") then
+        onBulletCreated(child)
+    end
+end)
+
+-- 处理已存在的子弹（游戏开始时）
+for _, child in ipairs(workspace:GetChildren()) do
+    if child.Name:find("Bullet") then
+        onBulletCreated(child)
+    end
+end

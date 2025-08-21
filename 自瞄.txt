@@ -1,0 +1,122 @@
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+local localPlayer = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+local currentMode = "不锁定" -- 默认不生效
+local uiVisible = false -- UI是否显示
+
+-- 创建UI容器
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AimControl"
+screenGui.Parent = localPlayer.PlayerGui
+
+-- 控制UI显示/隐藏的按钮
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 80, 0, 30)
+toggleBtn.Position = UDim2.new(0, 10, 0, 10)
+toggleBtn.Text = "切换设置"
+toggleBtn.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Parent = screenGui
+
+-- 模式选择面板（默认隐藏）
+local modeFrame = Instance.new("Frame")
+modeFrame.Size = UDim2.new(0, 150, 0, 120)
+modeFrame.Position = UDim2.new(0, 10, 0, 50)
+modeFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+modeFrame.Visible = uiVisible
+modeFrame.Parent = screenGui
+
+-- 模式标题
+local modeTitle = Instance.new("TextLabel")
+modeTitle.Size = UDim2.new(1, 0, 0, 30)
+modeTitle.Text = "选择模式"
+modeTitle.TextColor3 = Color3.new(1, 1, 1)
+modeTitle.BackgroundTransparency = 1
+modeTitle.Parent = modeFrame
+
+-- 锁头按钮
+local headBtn = Instance.new("TextButton")
+headBtn.Size = UDim2.new(0.8, 0, 0, 25)
+headBtn.Position = UDim2.new(0.1, 0, 0.3, 0)
+headBtn.Text = "锁头"
+headBtn.Parent = modeFrame
+
+-- 锁胸按钮
+local chestBtn = Instance.new("TextButton")
+chestBtn.Size = UDim2.new(0.8, 0, 0, 25)
+chestBtn.Position = UDim2.new(0.1, 0, 0.55, 0)
+chestBtn.Text = "锁胸"
+chestBtn.Parent = modeFrame
+
+-- 不锁定按钮
+local noneBtn = Instance.new("TextButton")
+noneBtn.Size = UDim2.new(0.8, 0, 0, 25)
+noneBtn.Position = UDim2.new(0.1, 0, 0.8, 0)
+noneBtn.Text = "不锁定"
+noneBtn.Parent = modeFrame
+
+-- 切换UI显示/隐藏
+toggleBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    modeFrame.Visible = uiVisible
+end)
+
+-- 选择模式
+headBtn.MouseButton1Click:Connect(function()
+    currentMode = "锁头"
+end)
+chestBtn.MouseButton1Click:Connect(function()
+    currentMode = "锁胸"
+end)
+noneBtn.MouseButton1Click:Connect(function()
+    currentMode = "不锁定"
+end)
+
+-- 判断目标是否在视野内
+local function isInViewport(targetPart)
+    local screenPos, isVisible = camera:WorldToViewportPoint(targetPart.Position)
+    -- 检查是否在屏幕范围内且可见
+    return isVisible and screenPos.X >= 0 and screenPos.X <= camera.ViewportSize.X 
+        and screenPos.Y >= 0 and screenPos.Y <= camera.ViewportSize.Y
+end
+
+-- 瞄准逻辑（每帧更新）
+RunService.RenderStepped:Connect(function()
+    if currentMode == "不锁定" then return end
+    
+    local closestEnemy = nil
+    local shortestDistance = math.huge
+    
+    -- 查找视野内最近的敌人（排除自己）
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local root = player.Character.HumanoidRootPart
+            -- 先判断是否在视野内
+            if isInViewport(root) then
+                local distance = (root.Position - camera.CFrame.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    closestEnemy = player
+                end
+            end
+        end
+    end
+    
+    -- 瞄准目标
+    if closestEnemy and closestEnemy.Character then
+        local targetPart = nil
+        if currentMode == "锁头" then
+            targetPart = closestEnemy.Character:FindFirstChild("Head")
+        elseif currentMode == "锁胸" then
+            targetPart = closestEnemy.Character:FindFirstChild("UpperTorso") or closestEnemy.Character:FindFirstChild("Torso")
+        end
+        
+        if targetPart and isInViewport(targetPart) then -- 再次确认目标部位在视野内
+            -- 将准星对准目标
+            camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
+        end
+    end
+end)
