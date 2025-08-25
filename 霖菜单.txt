@@ -1,0 +1,203 @@
+local player = game.Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+-- 创建主容器
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FloatingSystem"
+screenGui.Parent = playerGui
+screenGui.DisplayOrder = 100 -- 确保显示在最上层
+
+-- 创建悬浮球（改为图片按钮）
+local floatingBall = Instance.new("ImageButton") -- 改为图片按钮
+floatingBall.Name = "FloatingBall"
+floatingBall.Size = UDim2.new(0, 50, 0, 50) -- 保持原大小，可根据图片调整
+floatingBall.Position = UDim2.new(0.1, 0, 0.5, 0)
+-- 图片设置（替换为你的图片链接，支持PNG/JPG等）
+floatingBall.Image = "rbxassetid://85822496031857" -- 这里替换为实际图片的assetid
+floatingBall.ScaleType = Enum.ScaleType.Fit -- 图片适应按钮大小
+-- 移除文字相关属性，添加背景（可选，若图片有透明区域）
+floatingBall.BackgroundTransparency = 1 -- 背景透明（如果图片本身有背景可设为0）
+floatingBall.BorderSizePixel = 0 -- 去掉边框（可选）
+floatingBall.Parent = screenGui
+
+-- 创建菜单面板（修改背景为图片）
+local menuPanel = Instance.new("Frame")
+menuPanel.Name = "MenuPanel"
+menuPanel.Size = UDim2.new(0, 220, 0, 300)
+menuPanel.Position = UDim2.new(0.2, 0, 0.5, 0)
+menuPanel.BackgroundTransparency = 1 -- 原背景透明化
+menuPanel.BorderSizePixel = 2
+menuPanel.Visible = false
+menuPanel.Parent = screenGui
+
+-- 菜单背景图片（修改后）
+local menuBg = Instance.new("ImageLabel")
+menuBg.Name = "MenuBackground"
+menuBg.Size = UDim2.new(1, 0, 1, 0) -- 填满菜单面板
+menuBg.Image = "rbxassetid://5164287251" -- 你的背景图片ID
+-- 新增1：强制图片自身背景透明（避免默认白色背景遮挡）
+menuBg.BackgroundTransparency = 1 
+-- 新增2：验证图片是否加载成功
+local success, err = pcall(function()
+    local size = menuBg.ImageSourceSize
+    print("背景图片加载成功，尺寸：", size.X, "x", size.Y)
+end)
+if not success then
+    warn("背景图片加载失败！请检查ID是否正确：", err)
+    -- 可选：加载失败时显示备用图片
+    menuBg.Image = "rbxassetid://5164287251" -- 替换为一个有效的备用图片ID
+end
+menuBg.ScaleType = Enum.ScaleType.Stretch -- 图片拉伸适配
+menuBg.Parent = menuPanel
+
+-- 菜单拖动按钮
+local dragButton = Instance.new("TextButton")
+dragButton.Name = "DragButton"
+dragButton.Size = UDim2.new(1, 0, 0, 30)
+dragButton.Position = UDim2.new(0, 0, 0, 0)
+dragButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+dragButton.Text = "霖菜单"
+dragButton.Parent = menuPanel
+
+-- 最小化按钮
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Name = "MinimizeButton"
+minimizeButton.Size = UDim2.new(0, 20, 0, 20)
+minimizeButton.Position = UDim2.new(1, -25, 0, 5)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+minimizeButton.Text = "-"
+minimizeButton.TextColor3 = Color3.new(1, 1, 1)
+minimizeButton.BorderSizePixel = 0
+minimizeButton.Parent = menuPanel
+
+-- 添加滚动容器
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "ScrollContent"
+scrollFrame.Size = UDim2.new(1, 0, 1, -30)
+scrollFrame.Position = UDim2.new(0, 0, 0, 30)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.ScrollBarThickness = 5
+scrollFrame.Parent = menuPanel
+
+-- 滚动内容容器
+local contentContainer = Instance.new("Frame")
+contentContainer.Name = "ContentContainer"
+contentContainer.Size = UDim2.new(1, 0, 0, 500)
+contentContainer.BackgroundTransparency = 1
+contentContainer.Parent = scrollFrame
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, contentContainer.AbsoluteSize.Y)
+
+-- 创建功能按钮（修改为半透明）
+local function createButton(text, y, onClick)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.9, 0, 0, 50)
+    btn.Position = UDim2.new(0.05, 0, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB（0, 0, 0)
+    btn.BackgroundTransparency = 0.3 -- 按钮半透明（0-1之间调整）
+    btn.Text = text
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Parent = contentContainer
+-- dragButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+    btn.MouseButton1Click:Connect(onClick)
+    return btn
+end
+
+-- 原有按钮
+createButton("飞行", 10, function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/xongge/fly-/refs/heads/main/飞行脚本.txt"))()
+end)
+
+createButton("后门v3", 70, function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/iK4oS/backdoor.exe/v6x/source.lua"))()
+end)
+
+createButton("自瞄", 130, function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/xongge/lin-/refs/heads/main/%E8%87%AA%E7%9E%84.txt"))()
+end)
+
+-- 新增三个按钮
+createButton("自然黑洞", 190, function()
+    loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-BLACK-HOLE-30646"))()
+    print("开启自然黑洞")
+end)
+
+createButton("。。。", 250, function()
+    
+    print("oky")
+end)
+
+createButton("透视", 310, function()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/xongge/-/refs/heads/main/透视.txt"))()
+    print("开启透视")
+end)
+
+-- 关闭按钮
+local closeBtn = createButton("关闭", 370, function()
+    screenGui:Destroy()
+end)
+
+-- 菜单显示/隐藏（点击图片按钮仍触发）
+floatingBall.MouseButton1Click:Connect(function()
+    menuPanel.Visible = not menuPanel.Visible
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+    menuPanel.Visible = false
+end)
+
+-- 悬浮球拖动逻辑（保持不变）
+local ballIsDragging = false
+local ballPressStart = 0
+local ballOffset = Vector2.new()
+
+floatingBall.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        ballPressStart = tick()
+        ballOffset = input.Position - floatingBall.AbsolutePosition
+    end
+end)
+
+floatingBall.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        ballIsDragging = (tick() - ballPressStart >= 0.5)
+    end
+end)
+
+-- 菜单拖动逻辑（保持不变）
+local menuIsDragging = false
+local menuPressStart = 0
+local menuOffset = Vector2.new()
+
+dragButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        menuPressStart = tick()
+        menuOffset = input.Position - menuPanel.AbsolutePosition
+    end
+end)
+
+dragButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        menuIsDragging = (tick() - menuPressStart >= 0.2)
+    end
+end)
+
+-- 实时更新位置（保持不变）
+RunService.Heartbeat:Connect(function()
+    local mousePos = UserInputService:GetMouseLocation()
+    if ballIsDragging then
+        floatingBall.Position = UDim2.new(0, mousePos.X - ballOffset.X, 0, mousePos.Y - ballOffset.Y)
+    end
+    if menuIsDragging then
+        menuPanel.Position = UDim2.new(0, mousePos.X - menuOffset.X, 0, mousePos.Y - menuOffset.Y)
+    end
+end)
+
+-- 停止拖动（保持不变）
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        ballIsDragging = false
+        menuIsDragging = false
+    end
+end)
